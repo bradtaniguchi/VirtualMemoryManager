@@ -2,22 +2,28 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.io.*;
 
-
 public class VirtualMM {
     public static void main(String args[]) {
-        String filename = "addresses.txt";
+        //String filename = "addresses.txt";
+        if (args = 0 || args >= 3 ) { 
+        	System.out.println("Wrong number of Arguments!!");
+        	System.exit(1);
+        } else {
+        	String filename = args[1]; 
         
-        System.out.println("Starting VirtualMM..");
-        VirtualMM run = new VirtualMM();
-        ArrayList<Integer> arr = new ArrayList<Integer>();
-        try {
-            arr = run.getTable(filename);
-        } catch (FileNotFoundException e) {
-            System.out.println("Unable to read file!");
+	        System.out.println("Starting VirtualMM with filename: " + filename);
+	        VirtualMM run = new VirtualMM();
+	        
+	        ArrayList<Integer> arr = new ArrayList<Integer>();
+	        try {
+	            arr = run.getTable(filename);
+	        } catch (FileNotFoundException e) {
+	            System.out.println("Unable to read file!");
+	        }
+	        //System.out.println(run.getRightmost(run.StringToBinaryString(arr.get(1).toString()),8,0));
+	        run.printTest(arr);
+	        return;
         }
-        //System.out.println(run.getRightmost(run.StringToBinaryString(arr.get(1).toString()),8,0));
-        run.printTest(arr);
-        return;
     }
     /*Utility Function that converts a BinaryString to an integer*/
     public int BinaryStringtoInt(String s) {
@@ -36,6 +42,18 @@ public class VirtualMM {
             return null;
         }
         return retValue;
+    }
+    /*Utility Function to read BACKING_STORE.bin file, and get information from it.*/
+    public int getBack(String filename) throws FileNotFoundException {
+    	int retValue;
+    	File currDir = new File(".");
+    	File parDir = currDir.getParentFile();
+    	File realfile = new File(parDir, filename);
+    	RandomAccessFile file = new RandomAccessFile(realfile, "r");
+    	
+    	/*Add Logic here!*/
+    	return -1; //temp value
+    	
     }
     /*Function to read file, gets a list of addresses and puts into array*/
     public ArrayList<Integer> getTable(String filename) throws FileNotFoundException {
@@ -65,10 +83,11 @@ public class VirtualMM {
             padString = ("00000" + n.toString()).substring(n.toString().length());
             ex = StringToBinaryString(n.toString()); //BinaryStringtoInt(ex.substring(8,16))
             /*Physical = first 8 bits * final 8 bits*/
-            physical = (BinaryStringtoInt(ex.substring(8,16))) + (BinaryStringtoInt(ex.substring(0,8)));
+            physical = (BinaryStringtoInt(ex.substring(8,16))); 
+            		//(BinaryStringtoInt(ex.substring(0,8)));
             
             System.out.println("R: " + padString + " B: " + ex + " P: " + physical);
-            System.out.println("    T: " + BinaryStringtoInt(ex.substring(8,16)));
+            System.out.println("    T: " + BinaryStringtoInt(ex.substring(0,8)));
         }
         
     }
