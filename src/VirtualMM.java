@@ -3,18 +3,24 @@ import java.util.Scanner;
 import java.io.*;
 
 public class VirtualMM {
+	/*Runner Function*/
+	public int[] virtualMemory;
+	public int[] physicalMemory;
     public static void main(String args[]) {
         //String filename = "addresses.txt";
-        if (args = 0 || args >= 3 ) { 
+        if (args.length == 0 || args.length >= 2 ) { 
         	System.out.println("Wrong number of Arguments!!");
         	System.exit(1);
-        } else {
-        	String filename = args[1]; 
+        } else {        	
+        	String filename = args[0]; 
         
 	        System.out.println("Starting VirtualMM with filename: " + filename);
 	        VirtualMM run = new VirtualMM();
 	        
 	        ArrayList<Integer> arr = new ArrayList<Integer>();
+	        run.virtualMemory = new int[256];
+	        run.physicalMemory = new int[256];
+	        
 	        try {
 	            arr = run.getTable(filename);
 	        } catch (FileNotFoundException e) {
@@ -24,6 +30,15 @@ public class VirtualMM {
 	        run.printTest(arr);
 	        return;
         }
+    }
+    public 
+    /*Newer Version, doing things the easy way*/
+    public int getOffset(int input) {
+    	return input % 256;
+    }
+    /*Newer Versions, doing things the easy way*/
+    public int getPageNum(int input) { 
+    	return input / 256;
     }
     /*Utility Function that converts a BinaryString to an integer*/
     public int BinaryStringtoInt(String s) {
@@ -44,7 +59,7 @@ public class VirtualMM {
         return retValue;
     }
     /*Utility Function to read BACKING_STORE.bin file, and get information from it.*/
-    public int getBack(String filename) throws FileNotFoundException {
+    public int getBackValue(String filename, int pos ) throws FileNotFoundException {
     	int retValue;
     	File currDir = new File(".");
     	File parDir = currDir.getParentFile();
@@ -77,17 +92,17 @@ public class VirtualMM {
     }
     public void printTest(ArrayList<Integer> list) {
         String padString, ex;
-        int physical;
         System.out.println("Read-In : Binary-Rep : Physical-Address");
         for(Integer n : list) {
-            padString = ("00000" + n.toString()).substring(n.toString().length());
+            /*padString = ("00000" + n.toString()).substring(n.toString().length());
             ex = StringToBinaryString(n.toString()); //BinaryStringtoInt(ex.substring(8,16))
-            /*Physical = first 8 bits * final 8 bits*/
             physical = (BinaryStringtoInt(ex.substring(8,16))); 
             		//(BinaryStringtoInt(ex.substring(0,8)));
-            
             System.out.println("R: " + padString + " B: " + ex + " P: " + physical);
-            System.out.println("    T: " + BinaryStringtoInt(ex.substring(0,8)));
+            System.out.println("    T: " + BinaryStringtoInt(ex.substring(0,8)));*/
+        	padString = ("00000" + n.toString()).substring(n.toString().length());
+        	System.out.println("R: " + padString + " B: " + StringToBinaryString(n.toString()) + "/n" +  
+        					   "  O: " + getOffset(n.intValue()) + " P: " + getPageNum(n.intValue()));
         }
         
     }
