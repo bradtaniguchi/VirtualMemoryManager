@@ -5,7 +5,7 @@ import java.io.*;
 public class VirtualMM {
 	/*Runner Function*/
 	private int[] virtualMemory; //local addresses
-	private int[] physicalMemory; //long term positions, WHAT DO i MAKE THIS??
+	private int[] physicalMemory; //long term positions, WHAT Data type do I make this?
 	private boolean[] pageTable; //mid range position
 	
     public static void main(String args[]) {
@@ -28,9 +28,12 @@ public class VirtualMM {
 	        }
 	        /*1. Tell VirtualMM to read the file
 	         *2. Get the page number to SEE if on page table 
-	         * 
+	         *3. IF not on page table move stuff from backing_store into physical memmory
+	         *4. 
+	         *
 	         * 
 	         * */
+	        
         	run.checkAll(arr);
 	        return;
         }
@@ -86,7 +89,7 @@ public class VirtualMM {
     public static int BinaryStringtoInt(String s) {
         return Integer.parseInt(s,2);
     }
-    /*Utility Function that changes string to BinaryInteger*/
+    /*Utility Function that changes string to BinaryInteger, for printing and debugging*/
     public String StringToBinaryString(String s) {
         String retValue, bin;
         try {
