@@ -28,3 +28,11 @@ page size of 2^8 bytes
 
 16 entries on TLB
 Frame size of 2^8 bytes
+=========
+Handling page faults [from book]
+implement demand paging
+backing sore is represented as BACKINGSTORE
+when page fault occurs:
+
+read in a 256-byte page from file backing store, and store it in an available page frame
+in physical memory.  

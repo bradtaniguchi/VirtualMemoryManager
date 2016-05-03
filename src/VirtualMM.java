@@ -4,8 +4,10 @@ import java.io.*;
 
 public class VirtualMM {
 	/*Runner Function*/
-	public int[] virtualMemory;
-	public int[] physicalMemory;
+	private int[] virtualMemory; //local addresses
+	private int[] physicalMemory; //long term positions, WHAT DO i MAKE THIS??
+	private boolean[] pageTable; //mid range position
+	
     public static void main(String args[]) {
         //String filename = "addresses.txt";
         if (args.length == 0 || args.length >= 2 ) { 
@@ -15,33 +17,73 @@ public class VirtualMM {
         	String filename = args[0]; 
         
 	        System.out.println("Starting VirtualMM with filename: " + filename);
-	        VirtualMM run = new VirtualMM();
+	        VirtualMM run = new VirtualMM(filename);
 	        
 	        ArrayList<Integer> arr = new ArrayList<Integer>();
-	        run.virtualMemory = new int[256];
-	        run.physicalMemory = new int[256];
 	        
 	        try {
 	            arr = run.getTable(filename);
 	        } catch (FileNotFoundException e) {
 	            System.out.println("Unable to read file!");
 	        }
-	        //System.out.println(run.getRightmost(run.StringToBinaryString(arr.get(1).toString()),8,0));
-	        run.printTest(arr);
+	        /*1. Tell VirtualMM to read the file
+	         *2. Get the page number to SEE if on page table 
+	         * 
+	         * 
+	         * */
+        	run.checkAll(arr);
 	        return;
         }
+    } 
+    /*Constructor we will use*/
+    public VirtualMM(String filename) {
+    	/*Create two arrays to handle*/
+    	this.virtualMemory = new int[256];
+    	this.physicalMemory = new int[256];
+    	this.pageTable = new boolean[256];
+    	/*Add onto here function logic to start program.*/
     }
-    public 
+    /*Reads in arr of numbers, gets the pagenumber, checks the tablelocation to see if checked
+     * Primary usage function*/
+    public void checkAll(ArrayList<Integer> arr) {
+    	int offset, pagenum;
+    	int tempStore; //change this name and type later
+    	for(Integer i : arr) { 
+    		/*get the offset*/
+    		offset = getOffset(i.intValue());
+    		pagenum = getPageNum(i.intValue());
+    		
+    		/*see if page number is already used*/
+    		if(!pageTable[pagenum]) { //if false location, thus empty
+    			//PAGE FAULT here!
+    			flipTable(pagenum); //flip to being used!
+    			//get the number from the backing file
+    			tempStore = getBackValue("BACKING_STORE.bin", pagenum);
+    			System.out.println("PN: " + pagenum +" T:" + tempStore); //print
+    			
+    			//Need to figure out the type and move this type into the Physical Array of memory.
+    			
+    		} else { //location is used!
+    			//Later modify this to handle things in use...
+    			System.out.println("LOCATION USED NOT PREPARED! " + pagenum);
+    			return;
+    		}
+    	}
+    }
+    /*Utility function to flip boolean values in pageTable*/
+    private void flipTable(int location) {
+    	pageTable[location] = !pageTable[location];     	
+    }
     /*Newer Version, doing things the easy way*/
-    public int getOffset(int input) {
+    public static int getOffset(int input) {
     	return input % 256;
     }
     /*Newer Versions, doing things the easy way*/
-    public int getPageNum(int input) { 
+    public static int getPageNum(int input) { 
     	return input / 256;
     }
     /*Utility Function that converts a BinaryString to an integer*/
-    public int BinaryStringtoInt(String s) {
+    public static int BinaryStringtoInt(String s) {
         return Integer.parseInt(s,2);
     }
     /*Utility Function that changes string to BinaryInteger*/
@@ -59,15 +101,28 @@ public class VirtualMM {
         return retValue;
     }
     /*Utility Function to read BACKING_STORE.bin file, and get information from it.*/
-    public int getBackValue(String filename, int pos ) throws FileNotFoundException {
+    public int getBackValue(String filename, int pos ){
     	int retValue;
     	File currDir = new File(".");
     	File parDir = currDir.getParentFile();
     	File realfile = new File(parDir, filename);
-    	RandomAccessFile file = new RandomAccessFile(realfile, "r");
-    	
-    	/*Add Logic here!*/
-    	return -1; //temp value
+    	RandomAccessFile file;
+    	try {	
+    		file = new RandomAccessFile(realfile, "r");
+    	} catch(FileNotFoundException e) {
+    		System.out.println("File Not Found Exception for: " + filename);
+    		return -1;
+    	}
+    	try {
+    		file.seek(pos);
+    		retValue = file.read(); //get byte at pos
+    		//System.out.println("TEST "+ file.read());
+    		file.close();
+    	} catch(IOException e){
+    		System.out.println("IOException!");
+    		retValue = -1;
+    	}
+    	return retValue; //temp value
     	
     }
     /*Function to read file, gets a list of addresses and puts into array*/
@@ -85,6 +140,7 @@ public class VirtualMM {
         scanner.close();
         return list;
     }
+    /*This is the output we WANT to use in the end*/
     public void printOut(int virtual, int physical) {
         /*Also need to out print the VALUE at these locations in memory, said to use chars?*/
         System.out.println("Virtual address: " + virtual + " Physical address: " + physical + " Value: ");
