@@ -4,17 +4,16 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.ArrayList;
 
 /**
  * Bradley Taniguchi
  * 5/09/16
  * Virtual Memory Manager
  */
-import java.util.ArrayList;
 
-//1. read directly from backing store
 public class VirtualMM {
-	private byte[] backingArray; //holds the whole array
+	private byte[] backingArray; //holds the whole array to allow easier "reading"
 	private byte[] physicalMemory; //holds values from backing store
 	private int[] pageTable; //keeps track of whats "in memory"
 	private int numPages; //number of pages in memory
@@ -72,18 +71,11 @@ public class VirtualMM {
 				/*Calculate the phyAddress in our PhysicalMemory*/
 				phyAddress = lastPage + offset;
 				
-				
 				/*set pagetable value to which page, IE address/256 */
 				this.pageTable[pagenum] = lastPage;
-				
-				/*UNUSUAL ISSUE WITH TRANSFERING VALUES FROM .BIN TO PHYSICAL!!!*/
-				
+					
 				//val = physicalMemory[lastPage + offset]; //this doesnt work but should work...
 				val = getValue(item.intValue()); //this does work, but it takes the values directly from BACKINGSTORE
-				
-				/*Third version, uses page table*/
-				//pageval = pageTable[pagenum];
-				//val = physicalMemory[pageval + offset];
 				
 				System.out.print(" Physical Address: " + phyAddress + " Value: " + val + "// Offset: " + offset + "LastPage: " + lastPage);
 				System.out.println("");
@@ -95,10 +87,13 @@ public class VirtualMM {
 				/*We do not need to put item into memory, update hits*/
 				tlbHits++;				
 			}
-			
-			
-		}
-		
+		} //end for loop
+		double faultRate = pageFaults/numAddresses;
+		System.out.println("Numer of Translated Addresses: " + numAddresses);
+		System.out.println("Page Faults: " + pageFaults);
+		System.out.println("Page Fault Rate" + faultRate);
+		System.out.println("TLB Hits: ");
+		System.out.println("TLB Hit Rate: ");
 	}
 	/*Reads the given file for addresses to load, returns all addresses*/
 	private ArrayList<Integer> getAddressTable() {
