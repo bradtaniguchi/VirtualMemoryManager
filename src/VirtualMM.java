@@ -1,168 +1,195 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.io.*;
 
+/**
+ * Bradley Taniguchi
+ * 5/09/16
+ * Virtual Memory Manager
+ */
+import java.util.ArrayList;
+
+//1. read directly from backing store
 public class VirtualMM {
-	/*Runner Function*/
-	private int[] virtualMemory; //local addresses
-	private int[] physicalMemory; //long term positions, WHAT Data type do I make this?
-	private boolean[] pageTable; //mid range position
+	private byte[] backingArray; //holds the whole array
+	private byte[] physicalMemory; //holds values from backing store
+	private int[] pageTable; //keeps track of whats "in memory"
+	private int numPages; //number of pages in memory
+	private int pageSize; //size of pages
+	private int lastPage; //last page used in our physical memory
+	private String backFileName;
+	private String addressFileName;
 	
-    public static void main(String args[]) {
-        //String filename = "addresses.txt";
-        if (args.length == 0 || args.length >= 2 ) { 
-        	System.out.println("Wrong number of Arguments!!");
-        	System.exit(1);
-        } else {        	
-        	String filename = args[0]; 
-        
-	        System.out.println("Starting VirtualMM with filename: " + filename);
-	        VirtualMM run = new VirtualMM(filename);
-	        
-	        ArrayList<Integer> arr = new ArrayList<Integer>();
-	        
-	        try {
-	            arr = run.getTable(filename);
-	        } catch (FileNotFoundException e) {
-	            System.out.println("Unable to read file!");
-	        }
-	        /*1. Tell VirtualMM to read the file
-	         *2. Get the page number to SEE if on page table 
-	         *3. IF not on page table move stuff from backing_store into physical memmory
-	         *4. 
-	         *
-	         * 
-	         * */
-	        
-        	run.checkAll(arr);
-	        return;
-        }
-    } 
-    /*Constructor we will use*/
-    public VirtualMM(String filename) {
-    	/*Create two arrays to handle*/
-    	this.virtualMemory = new int[256];
-    	this.physicalMemory = new int[256];
-    	this.pageTable = new boolean[256];
-    	/*Add onto here function logic to start program.*/
-    }
-    /*Reads in arr of numbers, gets the pagenumber, checks the tablelocation to see if checked
-     * Primary usage function*/
-    public void checkAll(ArrayList<Integer> arr) {
-    	int offset, pagenum;
-    	int tempStore; //change this name and type later
-    	for(Integer i : arr) { 
-    		/*get the offset*/
-    		offset = getOffset(i.intValue());
-    		pagenum = getPageNum(i.intValue());
-    		
-    		/*see if page number is already used*/
-    		if(!pageTable[pagenum]) { //if false location, thus empty
-    			//PAGE FAULT here!
-    			flipTable(pagenum); //flip to being used!
-    			//get the number from the backing file
-    			tempStore = getBackValue("BACKING_STORE.bin", pagenum);
-    			System.out.println("PN: " + pagenum +" T:" + tempStore); //print
-    			
-    			//Need to figure out the type and move this type into the Physical Array of memory.
-    			
-    		} else { //location is used!
-    			//Later modify this to handle things in use...
-    			System.out.println("LOCATION USED NOT PREPARED! " + pagenum);
-    			return;
-    		}
-    	}
-    }
-    /*Utility function to flip boolean values in pageTable*/
-    private void flipTable(int location) {
-    	pageTable[location] = !pageTable[location];     	
-    }
-    /*Newer Version, doing things the easy way*/
-    public static int getOffset(int input) {
-    	return input % 256;
-    }
-    /*Newer Versions, doing things the easy way*/
-    public static int getPageNum(int input) { 
-    	return input / 256;
-    }
-    /*Utility Function that converts a BinaryString to an integer*/
-    public static int BinaryStringtoInt(String s) {
-        return Integer.parseInt(s,2);
-    }
-    /*Utility Function that changes string to BinaryInteger, for printing and debugging*/
-    public String StringToBinaryString(String s) {
-        String retValue, bin;
-        try {
-           bin = Integer.toBinaryString(Integer.parseInt(s));
-           /*Below is to allow padding for 16-bit integers*/
-           /*Format*////1011110100001111
-           retValue = ("0000000000000000" + bin).substring(bin.length());
-        }catch(NumberFormatException e) {
-            System.out.println("NumberFormatexception in StringToBinaryInt!");
-            return null;
-        }
-        return retValue;
-    }
-    /*Utility Function to read BACKING_STORE.bin file, and get information from it.*/
-    public int getBackValue(String filename, int pos ){
-    	int retValue;
-    	File currDir = new File(".");
+	public VirtualMM(String addressFileName, String backFileName) {
+		this.addressFileName = addressFileName;
+		this.backFileName = backFileName;
+		numPages = 256; //256 pages
+		pageSize = 256; //256 bytes
+		this.backingArray = new byte[numPages*pageSize];
+		this.physicalMemory = new byte[numPages*pageSize]; //array to hold things in physical mem  
+		this.pageTable = new int[numPages]; //holds information on what is loaded into memory
+		this.initPageTable(); //set pageTable to -1 
+		lastPage = 0; //no pages are used in our physical memory
+		
+	}
+	/*primary memory function handler*/
+	public void handleMemory() {
+		int pageFaults=0,tlbHits=0,numAddresses=0,phyAddress,offset, pagenum, val, pageval;
+		System.out.println("Starting main function");
+		/*Read the address table*/
+		ArrayList<Integer> list = new ArrayList<Integer>();
+		list = getAddressTable();
+		if(list == null) { //nothing to look at ERROR!
+			System.out.println("ERROR list is empty!");
+			return; 
+		}
+		this.getBackValue();
+		for(Integer item : list) {
+			offset = getOffset(item.intValue()); //get the offset of address
+			pagenum = getPageNum(item.intValue()); //get the pagenum of the address
+			
+			/*Print out Physical address here*/
+			System.out.print("Virtual Address: " + item.intValue()); //change to format?
+			
+			/*If this page value isn't in memory, add it*/
+			if(this.pageTable[pagenum] == -1) {
+				
+				/*If we are here increment page faults */
+				pageFaults++;
+				
+				/*If here its a page miss, load into memory*/
+				byte[] page = loadIntoMemory(pagenum);
+				
+				/*Put that page into main memory*/
+				for(int i=0;i<pageSize;i++) {
+					this.physicalMemory[lastPage+i] = page[i]; //put byte in page, into memory
+					
+				}
+				
+				/*Calculate the phyAddress in our PhysicalMemory*/
+				phyAddress = lastPage + offset;
+				
+				
+				/*set pagetable value to which page, IE address/256 */
+				this.pageTable[pagenum] = lastPage;
+				
+				/*UNUSUAL ISSUE WITH TRANSFERING VALUES FROM .BIN TO PHYSICAL!!!*/
+				
+				//val = physicalMemory[lastPage + offset]; //this doesnt work but should work...
+				val = getValue(item.intValue()); //this does work, but it takes the values directly from BACKINGSTORE
+				
+				/*Third version, uses page table*/
+				//pageval = pageTable[pagenum];
+				//val = physicalMemory[pageval + offset];
+				
+				System.out.print(" Physical Address: " + phyAddress + " Value: " + val + "// Offset: " + offset + "LastPage: " + lastPage);
+				System.out.println("");
+				
+				/*increment the last page we have in Physical Memory, so we can write i*/
+				lastPage += pageSize; 
+				
+			} else { //our page is ALREADY in memory!
+				/*We do not need to put item into memory, update hits*/
+				tlbHits++;				
+			}
+			
+			
+		}
+		
+	}
+	/*Reads the given file for addresses to load, returns all addresses*/
+	private ArrayList<Integer> getAddressTable() {
+		ArrayList<Integer> list = new ArrayList<Integer>();
+		File currDir = new File(".");
+		File parDir = currDir.getParentFile();
+		File file = new File(parDir, addressFileName);
+		Scanner scanner;
+		try {
+			scanner = new Scanner(file);
+		} catch(FileNotFoundException e) {
+			System.out.println("File not Found Exception for: " + addressFileName);
+			return null; //handle this elsewhere
+		} 
+		while(scanner.hasNextInt()) {
+			Integer i = new Integer(scanner.nextInt());
+			list.add(i);
+		}
+		scanner.close();
+		return list;
+	}
+	/*Loads from the backingArray*/
+	private byte[] loadIntoMemory(int pos){
+		byte[] b = new byte[pageSize];
+		for(int i=0;i<pageSize;i++) {
+			b[i] = this.backingArray[i];
+		}
+		return b;
+	}
+	/*Gets values from source.*/
+	private int getValue(int pos){
+		byte value;
+		File currDir = new File(".");
     	File parDir = currDir.getParentFile();
-    	File realfile = new File(parDir, filename);
+    	File realfile = new File(parDir, this.backFileName);
     	RandomAccessFile file;
-    	try {	
+    	try {
     		file = new RandomAccessFile(realfile, "r");
     	} catch(FileNotFoundException e) {
-    		System.out.println("File Not Found Exception for: " + filename);
-    		return -1;
+    		System.out.println("FILE NOT FOUND for: " + this.backFileName);
+    		return -99;
     	}
     	try {
-    		file.seek(pos);
-    		retValue = file.read(); //get byte at pos
-    		//System.out.println("TEST "+ file.read());
-    		file.close();
-    	} catch(IOException e){
+    		file.seek(pos); //go to position in file
+        		value = file.readByte(); //read the line
+        	
+    		file.close(); 
+    	} catch(IOException e) {
     		System.out.println("IOException!");
-    		retValue = -1;
+    		value = -99;
     	}
-    	return retValue; //temp value
-    	
-    }
-    /*Function to read file, gets a list of addresses and puts into array*/
-    public ArrayList<Integer> getTable(String filename) throws FileNotFoundException {
-        ArrayList<Integer> list = new ArrayList<Integer>(); //declare length after reading file
-        File currDir = new File(".");
-        File parDir = currDir.getParentFile();
-        File file = new File(parDir,filename);
-        Scanner scanner = new Scanner(file);
-        
-        while(scanner.hasNextInt()) {
-            Integer i = new Integer(scanner.nextInt());
-            list.add(i);
-        }
-        scanner.close();
-        return list;
-    }
-    /*This is the output we WANT to use in the end*/
-    public void printOut(int virtual, int physical) {
-        /*Also need to out print the VALUE at these locations in memory, said to use chars?*/
-        System.out.println("Virtual address: " + virtual + " Physical address: " + physical + " Value: ");
-        
-    }
-    public void printTest(ArrayList<Integer> list) {
-        String padString, ex;
-        System.out.println("Read-In : Binary-Rep : Physical-Address");
-        for(Integer n : list) {
-            /*padString = ("00000" + n.toString()).substring(n.toString().length());
-            ex = StringToBinaryString(n.toString()); //BinaryStringtoInt(ex.substring(8,16))
-            physical = (BinaryStringtoInt(ex.substring(8,16))); 
-            		//(BinaryStringtoInt(ex.substring(0,8)));
-            System.out.println("R: " + padString + " B: " + ex + " P: " + physical);
-            System.out.println("    T: " + BinaryStringtoInt(ex.substring(0,8)));*/
-        	padString = ("00000" + n.toString()).substring(n.toString().length());
-        	System.out.println("R: " + padString + " B: " + StringToBinaryString(n.toString()) + "/n" +  
-        					   "  O: " + getOffset(n.intValue()) + " P: " + getPageNum(n.intValue()));
-        }
-        
-    }
+    	return value;
+	}
+	/*Reads the BACKING_STORE.bin file and puts it into the BackingArray*/
+	private void getBackValue() { 
+		File currDir = new File(".");
+    	File parDir = currDir.getParentFile();
+    	File realfile = new File(parDir, this.backFileName);
+    	RandomAccessFile file;
+    	try {
+    		file = new RandomAccessFile(realfile, "r");
+    	} catch(FileNotFoundException e) {
+    		System.out.println("FILE NOT FOUND for: " + this.backFileName);
+    		return;
+    	}
+    	try {
+    		file.seek(0); //go to position in file
+    		for(int i=0;i<pageSize*numPages;i++) {
+        		backingArray[i] = file.readByte(); //read the line	
+    		}
+    		file.close(); 
+    	} catch(IOException e) {
+    		System.out.println("IOException!");
+    	} 
+	}
+	/*Prints out calling function*/
+	private void printOut(int virtual, int physical, int value) {
+		System.out.println("Virtual address: " + virtual + " Physical address: " + physical + " Value: " + value);
+	}
+	/*Utility function to get offset given local address*/
+	private int getOffset(int logicalAddress) {
+		return logicalAddress % this.pageSize; //correct?
+	}
+	/*Utility function to get pagenumber given local address*/
+	private int getPageNum(int logicalAddress) {
+		return logicalAddress/this.numPages; //correct?
+	}
+	/*sets all values in page table to -1*/
+	private void initPageTable(){
+		for(int i=0;i<pageTable.length;i++) {
+			pageTable[i] = -1;
+		}
+	}
 }

@@ -36,3 +36,12 @@ when page fault occurs:
 
 read in a 256-byte page from file backing store, and store it in an available page frame
 in physical memory.  
+=========GIVEN SOME STUFF
+Read in the thing as char, cast to Int will cast to left.
+
+CHANGE PageTable to hold integers, for each page number
+============
+I FIGURED OUT THE PROBLEM
+1. This ISN'T a memory manager, its just a memory reader.
+2. Load the ENTIRE BACKING STORE into the array in order.
+3. Translate the virtual address
