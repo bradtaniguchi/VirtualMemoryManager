@@ -105,9 +105,9 @@ public class VirtualMM {
 	/*Reads the given file for addresses to load, returns all addresses*/
 	private ArrayList<Integer> getAddressTable() {
 		ArrayList<Integer> list = new ArrayList<Integer>();
-		File currDir = new File(".");
-		File parDir = currDir.getParentFile();
-		File file = new File(parDir, addressFileName);
+		//File currDir = new File(".");
+		//File parDir = currDir.getParentFile();
+		File file = new File(this.addressFileName);
 		Scanner scanner;
 		try {
 			scanner = new Scanner(file);
@@ -133,9 +133,9 @@ public class VirtualMM {
 	/*Gets values from source.*/
 	private int getValue(int pos){
 		byte value;
-		File currDir = new File(".");
-    	File parDir = currDir.getParentFile();
-    	File realfile = new File(parDir, this.backFileName);
+		//File currDir = new File(".");
+    	//File parDir = currDir.getParentFile();
+    	File realfile = new File(this.backFileName);
     	RandomAccessFile file;
     	try {
     		file = new RandomAccessFile(realfile, "r");
@@ -156,9 +156,9 @@ public class VirtualMM {
 	}
 	/*Reads the BACKING_STORE.bin file and puts it into the BackingArray*/
 	private void getBackValue() { 
-		File currDir = new File(".");
-    	File parDir = currDir.getParentFile();
-    	File realfile = new File(parDir, this.backFileName);
+		//File currDir = new File(".");
+    	//File parDir = currDir.getParentFile();
+    	File realfile = new File(this.backFileName);
     	RandomAccessFile file;
     	try {
     		file = new RandomAccessFile(realfile, "r");

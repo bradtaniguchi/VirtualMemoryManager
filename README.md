@@ -1,20 +1,36 @@
 # VirtualMemoryManager
 Bradley Taniguchi
-Java programming Project for Operating Systems 341.
+Java programming Project for OpeRrating Systems 341.
 
 ####INSTRUCTIONS
-To compile from the command line:
-1. 
+Its best to import the project into Eclipse, to compile and run(optimal):   
+1. `File -> Import.. -> General -> Existing Projects into Workspace`   
+	Then let Eclipse Build the project automatically.
+	  
+2. To run hit Ctrl+F11   
+	OR  
+	`Run -> Run`    
 
----
+To Compile and run from the command-line(less optimal):  
+1. Navigate to the root directory of the Project (VirtualMemoryManager and run the following command to compile  
+`javac -d bin src/*`
 
-####Screenshot
-to be added...
+2. Manually move the addresses.txt, and the BACKING_STORE.bin files from the root, into the bin directory with command  
+`mv addrresses.txt BACKING_STORE.BIN bin`
+
+3. Run the program with:  
+`java bin/VirtualMemoryManagerRunner`
 
 ---
 
 ####Files
-to be added...
+File structure is normally as followed:    
+bin - to hold compiled class files  
+src - to hold source code files  
+	VirtualMemoryManagerRunner.java - runner class, runs the program and holds filenames
+	VirtualMM.java - main class, does the logic and main program.  
+addresses.txt - list of addresses to access  
+BACKING_STORE.bin - to represent memory.
 
 ---
 
