@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.ArrayList;
 
 /**
  * Bradley Taniguchi
@@ -16,6 +15,9 @@ public class VirtualMM {
 	private byte[] backingArray; //holds the whole array to allow easier "reading"
 	private byte[] physicalMemory; //holds values from backing store
 	private int[] pageTable; //keeps track of whats "in memory"
+	private int[] TLB; //side table buffer, check this first because its "faster"
+	private int[] TLBcounter; //keeps track of "ages" in TLB, used to remove oldest items in TLB
+	private int TLBSize; 
 	private int numPages; //number of pages in memory
 	private int pageSize; //size of pages
 	private int lastPage; //last page used in our physical memory
@@ -27,16 +29,19 @@ public class VirtualMM {
 		this.backFileName = backFileName;
 		numPages = 256; //256 pages
 		pageSize = 256; //256 bytes
+		TLBSize = 16; //16 entries
 		this.backingArray = new byte[numPages*pageSize];
 		this.physicalMemory = new byte[numPages*pageSize]; //array to hold things in physical mem  
 		this.pageTable = new int[numPages]; //holds information on what is loaded into memory
+		this.TLB = new int[TLBSize]; //holds 16 latest entries
+		this.TLBcounter = new int[TLBSize]; //holds 16 entires.
 		this.initPageTable(); //set pageTable to -1 
 		lastPage = 0; //no pages are used in our physical memory
 		
 	}
 	/*primary memory function handler*/
 	public void handleMemory() {
-		int pageFaults=0,tlbHits=0,numAddresses=0,phyAddress,offset, pagenum, val, pageval;
+		int pageFaults=0,tlbHits=0,numAddresses=0,phyAddress,offset, pagenum, val;
 		System.out.println("Starting main function");
 		/*Read the address table*/
 		ArrayList<Integer> list = new ArrayList<Integer>();
@@ -46,12 +51,10 @@ public class VirtualMM {
 			return; 
 		}
 		this.getBackValue();
+		numAddresses = list.size(); //get the number of addresses
 		for(Integer item : list) {
 			offset = getOffset(item.intValue()); //get the offset of address
 			pagenum = getPageNum(item.intValue()); //get the pagenum of the address
-			
-			/*Print out Physical address here*/
-			System.out.print("Virtual Address: " + item.intValue()); //change to format?
 			
 			/*If this page value isn't in memory, add it*/
 			if(this.pageTable[pagenum] == -1) {
@@ -65,7 +68,6 @@ public class VirtualMM {
 				/*Put that page into main memory*/
 				for(int i=0;i<pageSize;i++) {
 					this.physicalMemory[lastPage+i] = page[i]; //put byte in page, into memory
-					
 				}
 				
 				/*Calculate the phyAddress in our PhysicalMemory*/
@@ -73,25 +75,30 @@ public class VirtualMM {
 				
 				/*set pagetable value to which page, IE address/256 */
 				this.pageTable[pagenum] = lastPage;
-					
+				
+				/*Print the Memory Value*/
+				
 				//val = physicalMemory[lastPage + offset]; //this doesnt work but should work...
 				val = getValue(item.intValue()); //this does work, but it takes the values directly from BACKINGSTORE
-				
-				System.out.print(" Physical Address: " + phyAddress + " Value: " + val + "// Offset: " + offset + "LastPage: " + lastPage);
+				System.out.print("VirtualAddress: " + item.intValue() + " Physical Address: " + phyAddress +
+						" Value: " + val + "// Offset: " + offset + "LastPage: " + lastPage);
 				System.out.println("");
 				
 				/*increment the last page we have in Physical Memory, so we can write i*/
 				lastPage += pageSize; 
 				
+				/*Update TLB, buffer, see if we want to remove the last item and replace it with the latest*/
+				
 			} else { //our page is ALREADY in memory!
 				/*We do not need to put item into memory, update hits*/
-				tlbHits++;				
+				tlbHits++; 
+				/*Our page is already in memory, consult TLB to get the information, */
 			}
 		} //end for loop
-		double faultRate = pageFaults/numAddresses;
-		System.out.println("Numer of Translated Addresses: " + numAddresses);
+		double faultRate = ((double) pageFaults/((double) numAddresses));
+		System.out.println("Number of Translated Addresses: " + numAddresses);
 		System.out.println("Page Faults: " + pageFaults);
-		System.out.println("Page Fault Rate" + faultRate);
+		System.out.println("Page Fault Rate: " + faultRate);
 		System.out.println("TLB Hits: ");
 		System.out.println("TLB Hit Rate: ");
 	}
