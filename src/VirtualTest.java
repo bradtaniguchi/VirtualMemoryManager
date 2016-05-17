@@ -11,7 +11,7 @@ import java.util.Scanner;
  * Virtual Memory Manager
  */
 
-public class VirtualMM {
+public class VirtualTest {
 	private byte[] backingArray; //holds the whole array to allow easier "reading"
 	private byte[] physicalMemory; //holds values from backing store
 	private int[] pageTable; //keeps track of whats "in memory"
@@ -24,7 +24,7 @@ public class VirtualMM {
 	private String backFileName;
 	private String addressFileName;
 	
-	public VirtualMM(String addressFileName, String backFileName) {
+	public VirtualTest(String addressFileName, String backFileName) {
 		this.addressFileName = addressFileName;
 		this.backFileName = backFileName;
 		numPages = 256; //256 pages
@@ -78,9 +78,11 @@ public class VirtualMM {
 				
 				/*Print the Memory Value*/
 				
-				//val = physicalMemory[lastPage + offset]; //this doesnt work but should work...
-				val = getValue(item.intValue()); //this does work, but it takes the values directly from BACKINGSTORE
-				
+				val = physicalMemory[lastPage + offset]; //this doesnt work but should work...
+				//val = getValue(item.intValue()); //this does work, but it takes the values directly from BACKINGSTORE
+				System.out.print("VirtualAddress: " + item.intValue() + " Physical Address: " + phyAddress +
+						" Value: " + val + "// Offset: " + offset + "LastPage: " + lastPage);
+				System.out.println("");
 				
 				/*increment the last page we have in Physical Memory, so we can write i*/
 				lastPage += pageSize; 
@@ -91,12 +93,7 @@ public class VirtualMM {
 				/*We do not need to put item into memory, update hits*/
 				tlbHits++; 
 				/*Our page is already in memory, consult TLB to get the information, */
-				phyAddress = this.pageTable[pagenum] + offset;
-				val = getValue(item.intValue());
 			}
-			System.out.print("VirtualAddress: " + item.intValue() + " Physical Address: " + phyAddress +
-					" Value: " + val + " // Offset: " + offset + "LastPage: " + lastPage);
-			System.out.println("");
 		} //end for loop
 		double faultRate = ((double) pageFaults/((double) numAddresses));
 		System.out.println("Number of Translated Addresses: " + numAddresses);
@@ -129,7 +126,8 @@ public class VirtualMM {
 	private byte[] loadIntoMemory(int pos){
 		byte[] b = new byte[pageSize];
 		for(int i=0;i<pageSize;i++) {
-			b[i] = this.backingArray[i];
+			
+			b[i] = this.backingArray[pos + i];
 		}
 		return b;
 	}
